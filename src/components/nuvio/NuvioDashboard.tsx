@@ -46,18 +46,22 @@ export function NuvioDashboard() {
 
   if (loading && !data) {
     return (
-      <div className="flex h-64 items-center justify-center text-ink-secondary text-[13px]">
-        <RefreshCw className="animate-spin mr-2" size={16} />
-        Loading Nuvio operational dashboard...
-      </div>
+      <main className="flex min-w-0 flex-1 flex-col items-center justify-center bg-app text-ink">
+        <div className="flex items-center justify-center text-ink-secondary text-[13px]">
+          <RefreshCw className="animate-spin mr-2" size={16} />
+          Loading Nuvio operational dashboard...
+        </div>
+      </main>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="p-6 text-red-500 text-[13px]">
-        {error || "Unable to retrieve operational metrics."}
-      </div>
+      <main className="flex min-w-0 flex-1 flex-col items-center justify-center bg-app text-ink">
+        <div className="p-6 text-red-500 text-[13px]">
+          {error || "Unable to retrieve operational metrics."}
+        </div>
+      </main>
     );
   }
 
@@ -71,7 +75,9 @@ export function NuvioDashboard() {
       : "Independent Medical Coordinator";
 
   return (
-    <div className="flex flex-col gap-5 p-6 max-w-6xl mx-auto">
+    <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-app text-ink">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-5 p-6 pb-24 md:pb-6 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-border-secondary">
         <div>
@@ -234,6 +240,8 @@ export function NuvioDashboard() {
           </div>
         )}
       </div>
-    </div>
+        </div>
+      </div>
+    </main>
   );
 }

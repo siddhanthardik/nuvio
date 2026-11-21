@@ -31,7 +31,7 @@ export function HelperIntro(props: IntroProps) {
 function AdvancedHelperIntro({ botId, threadId, message, answered }: IntroProps) {
   const { state, dispatch } = useStore();
   const bot = state.bots.find((candidate) => candidate.id === botId);
-  const name = bot?.name ?? "MausBot";
+  const name = bot?.name ?? "Nuvio";
   const team = bot?.defaultBot?.person ? state.config?.team?.name : undefined;
   const ask = (key: LocaleKey) => dispatch({ type: "answerCard", botId, threadId, messageId: message.id, answer: t(key) });
   return (
@@ -57,6 +57,13 @@ function AdvancedHelperIntro({ botId, threadId, message, answered }: IntroProps)
               {t(key)}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => dispatch({ type: "showOperations" })}
+            className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-[13px] font-medium text-primary hover:bg-primary/20"
+          >
+            Open Operations Workspace
+          </button>
           <button
             type="button"
             data-helper-dismiss=""

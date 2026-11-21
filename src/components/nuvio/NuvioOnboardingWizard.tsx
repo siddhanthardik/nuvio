@@ -48,10 +48,27 @@ export function NuvioOnboardingWizard({ onCompleted, onSkip }: WizardProps) {
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        throw new Error(data.error || "Failed to complete onboarding.");
+      let data: { ok?: boolean; error?: string | { message?: string }; message?: string; config?: NuvioOrganizationConfig };
+      try {
+        data = await res.json();
+      } catch {
+        throw new Error(`Server returned status ${res.status} with an invalid response format.`);
       }
+
+      if (!res.ok || !data.ok) {
+        const errorMsg =
+          typeof data.error === "string"
+            ? data.error
+            : typeof data.error === "object" && data.error && "message" in data.error
+            ? String(data.error.message)
+            : data.message || `Onboarding failed with status ${res.status}.`;
+        throw new Error(errorMsg);
+      }
+
+      if (!data.config) {
+        throw new Error("Server confirmed onboarding but did not return updated configuration.");
+      }
+
       onCompleted(data.config);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Submission failed");

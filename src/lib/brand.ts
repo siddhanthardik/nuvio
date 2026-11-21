@@ -21,7 +21,7 @@ export const DEFAULT_BRAND: Brand = {
 /** The product's name wherever a person reads it. */
 export const PRODUCT_NAME = "Nuvio";
 
-let current: BrandStatus = { brand: DEFAULT_BRAND, source: "default", file: "" };
+let current: BrandStatus = { brand: DEFAULT_BRAND, source: "file", file: "nuvio" };
 
 export function brand(): Brand {
   return current.brand;

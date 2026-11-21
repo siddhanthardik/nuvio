@@ -36,7 +36,6 @@ export function useWelcomeViewer(): WelcomeViewer | null {
 
 export function WelcomeGate({ viewer }: { viewer: WelcomeViewer | null }) {
   const { state, dispatch } = useStore();
-  const [dismissed, setDismissed] = useState(false);
   const remoteClient = window.ogb?.remoteClient?.active === true;
   // A welcome finished elsewhere (another window, an older version's record) leaves no draft behind to resume later.
   const finished = Boolean(viewer && state.config) && !welcomeDue(state.config, {
@@ -56,26 +55,16 @@ export function WelcomeGate({ viewer }: { viewer: WelcomeViewer | null }) {
       />
     );
   }
-  const due =
-    !dismissed &&
-    welcomeDue(state.config, {
-      remoteClient,
-      legacyDone: emailGateDone(),
-      hosted: viewer.hosted,
-      canSave: viewer.canSave,
-      cloudHome: viewer.cloudHome,
-    });
-  if (state.appSettingsOpen && (["desktopWorkspaces", "organization"].includes(state.appSettingsSection) ||
-    (state.appSettingsSection === "cloudAccount" && state.appSettingsCloudLink > 0))) return null;
-  if (!state.welcomeOpen && !due) return null;
+  // In Nuvio, onboarding is managed by NuvioOnboardingHost.
+  // Suppress the automatic OpenMausBot WelcomeFlow popup.
+  if (!state.welcomeOpen) return null;
   const fallback = state.bots.find((b) => !b.hidden && b.chiefOfStaff) ?? state.bots.find((b) => !b.hidden) ?? null;
-  const replay = state.welcomeOpen && !due;
+  const replay = Boolean(state.welcomeOpen);
   return (
     <WelcomeFlow
       replay={replay}
       hosted={viewer.hosted}
       onDone={(botId) => {
-        setDismissed(true);
         dispatch({ type: "toggleWelcome", open: false });
         // A first run ends in the chat with the bot it chose, else its Chief; the app tour starts only from Settings.
         const target = botId ?? (replay ? null : fallback?.id);

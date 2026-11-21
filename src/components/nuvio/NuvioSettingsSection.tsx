@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Check, Building2, MessageSquare, Workflow, Save, AlertCircle } from "lucide-react";
+import { Check, Building2, MessageSquare, Workflow, Save, AlertCircle, Sparkles, HeartPulse, LayoutDashboard } from "lucide-react";
 import { Card, SettingRow, SettingsGroup, SettingsRows, Switch } from "../SettingsPrimitives";
+import { useStore } from "@/state/store";
 import type {
   CommunicationStyle,
   NuvioOrganizationConfig,
@@ -9,6 +10,7 @@ import type {
 } from "../../../shared/nuvio/organization-config";
 
 export function NuvioSettingsSection() {
+  const { dispatch } = useStore();
   const [config, setConfig] = useState<NuvioOrganizationConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -89,6 +91,53 @@ export function NuvioSettingsSection() {
   return (
     <SettingsGroup label="Nuvio Medical Tourism Platform" block="nuvio-settings">
       <div className="flex flex-col gap-3">
+        {/* Quick Launch & Status Bar */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-accent/5 border border-accent/20">
+          <div>
+            <div className="text-[14px] font-semibold text-ink flex items-center gap-1.5">
+              <span>{config.organizationName || "Nuvio Organization Setup"}</span>
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-accent/15 text-accent">
+                {config.organizationType.replace(/_/g, " ")}
+              </span>
+            </div>
+            <div className="text-[12px] text-ink-secondary mt-0.5">
+              Configure hospital credentials, clinical coordinators, and patient journey capabilities.
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                dispatch({ type: "toggleAppSettings", open: false });
+                dispatch({ type: "showOperations" });
+              }}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium rounded-lg bg-raised hover:bg-raised/80 text-ink border border-hairline transition-colors"
+            >
+              <HeartPulse size={13} className="text-accent" />
+              Operations
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                dispatch({ type: "toggleAppSettings", open: false });
+                dispatch({ type: "showDashboard" });
+              }}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium rounded-lg bg-raised hover:bg-raised/80 text-ink border border-hairline transition-colors"
+            >
+              <LayoutDashboard size={13} className="text-accent" />
+              Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent("nuvio:open-wizard"))}
+              className="flex items-center gap-1 px-2.5 py-1.5 text-[12px] font-medium rounded-lg bg-accent text-white hover:brightness-110 transition-colors shadow-xs"
+            >
+              <Sparkles size={13} />
+              Setup Wizard
+            </button>
+          </div>
+        </div>
+
         {/* Navigation Tabs */}
         <div className="flex gap-2 border-b border-border-secondary pb-2">
           <button

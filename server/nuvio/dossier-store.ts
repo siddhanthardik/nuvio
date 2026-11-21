@@ -163,11 +163,17 @@ export class NuvioDossierStore {
     return this.saveOrganizationConfig(config);
   }
 
-  completeOnboarding(patch: Partial<NuvioOrganizationConfigInput>): NuvioOrganizationConfig {
+  completeOnboarding(patch: NuvioOrganizationConfigInput): NuvioOrganizationConfig {
     const current = this.getOrganizationConfig();
-    const merged = {
+    const orgName = (patch.organizationName || current.organizationName || "").trim();
+    const merged: NuvioOrganizationConfigInput = {
       ...current,
       ...patch,
+      organizationId: current.organizationId || "hospital_default",
+      hospitalId: current.hospitalId || "hospital_default",
+      organizationName: orgName,
+      hospitalName: orgName,
+      organizationType: patch.organizationType || current.organizationType || "hospital",
       onboardingCompleted: true,
     };
     return this.saveOrganizationConfig(merged);

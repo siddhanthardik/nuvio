@@ -178,7 +178,7 @@ export function evaluateDossierNurturing(
       category: "re_engagement",
       priority: "low",
       status: "pending",
-      assignedCoordinator: "nuvio_concierge",
+      assignedCoordinator: config.agents.nuvio_followup?.displayName || "Pooja",
       dueDate: now + 24 * 3600 * 1000,
     });
 
@@ -192,6 +192,27 @@ export function evaluateDossierNurturing(
       status: "pending_review",
       channel: "whatsapp",
       scheduledTime: now,
+    });
+  }
+
+  // --- RULE 6: Visa & Travel Logistics Coordination ---
+  if (
+    enabledCaps.has("visa_travel_coordination") &&
+    (dossier.stage === "visa_travel_coordination" ||
+      dossier.stage === "visa_assistance" ||
+      dossier.stage === "converted_treatment_proceeding") &&
+    !dossier.visaTravel.visaInvitationIssued &&
+    !hasActiveTask("visa_letter_review")
+  ) {
+    newTasks.push({
+      patientId: dossier.patientId,
+      title: `Prepare medical visa invitation letter for ${dossier.personal.name}`,
+      description: `Patient confirmed treatment. Compile passport details, hospital guarantee, and embassy invitation letter for human coordinator approval.`,
+      category: "visa_letter_review",
+      priority: "high",
+      status: "pending",
+      assignedCoordinator: config.agents.nuvio_travel?.displayName || "Mahesh",
+      dueDate: now + 24 * 3600 * 1000,
     });
   }
 

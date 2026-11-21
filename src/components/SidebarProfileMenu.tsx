@@ -19,6 +19,8 @@ import {
   MessageSquare,
   Sparkles,
   FolderTree,
+  HeartPulse,
+  LayoutDashboard,
   RefreshCw,
   Rocket,
   Settings as SettingsIcon,
@@ -310,7 +312,7 @@ export function phoneDevicesItem(state: PhonePlaceState, place: string, onSelect
   };
 }
 
-export function toolMenuItems({ activeView, automationsNeedYou, onAutomations, onTeamMap, onFiles, onPublishedApps, onTeamFiles, archived }: {
+export function toolMenuItems({ activeView, automationsNeedYou, onAutomations, onTeamMap, onFiles, onPublishedApps, onTeamFiles, archived, onOperations, onDashboard }: {
   activeView: string;
   automationsNeedYou: boolean;
   onAutomations: () => void;
@@ -321,8 +323,12 @@ export function toolMenuItems({ activeView, automationsNeedYou, onAutomations, o
   /** set only on a Team Cloud: its shared folder */
   onTeamFiles?: () => void;
   archived?: ArchivedBots;
+  onOperations?: () => void;
+  onDashboard?: () => void;
 }): SidebarMenuItem[] {
   return [
+    ...(onOperations ? [{ key: "operations", label: "Patient Operations", icon: <HeartPulse size={16} />, active: activeView === "nuvio-operations", onSelect: onOperations }] : []),
+    ...(onDashboard ? [{ key: "dashboard", label: "Operations Dashboard", icon: <LayoutDashboard size={16} />, active: activeView === "nuvio-dashboard", onSelect: onDashboard }] : []),
     { key: "automations", label: t("sidebar.nav.automations"), icon: <Zap size={16} />, active: activeView === "routines", attention: automationsNeedYou, onSelect: onAutomations },
     { key: "team-map", label: t("sidebar.nav.teamMap"), icon: <UsersRound size={16} />, active: activeView === "team-map", onSelect: onTeamMap },
     ...(onFiles ? [{ key: "files", label: t("sidebar.nav.files"), icon: <FolderOpen size={16} />, active: activeView === "files", onSelect: onFiles }] : []),
@@ -605,6 +611,8 @@ export function SidebarProfileMenu({ iconOnly = false, rail = false, circle = fa
       tools: toolMenuItems({
         activeView: state.activeView,
         automationsNeedYou: account?.automationsNeedYou ?? automationsNeedYou,
+        onOperations: () => dispatch({ type: "showOperations" }),
+        onDashboard: () => dispatch({ type: "showDashboard" }),
         onAutomations: () => dispatch({ type: "showRoutines", view: "list" }),
         onTeamMap: () => dispatch({ type: "showTeamMap" }),
         onFiles: filesReady ? () => dispatch({ type: "showFiles" }) : undefined,

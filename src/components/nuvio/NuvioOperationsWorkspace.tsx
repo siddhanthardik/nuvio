@@ -9,13 +9,14 @@ import {
   Check,
   X,
   Play,
-  ShieldAlert,
+  Plus,
 } from "lucide-react";
 import type { NuvioPatientDossier } from "../../../shared/nuvio/patient-journey";
 import type {
   CommunicationQueueItem,
   CoordinatorTask,
 } from "../../../shared/nuvio/patient-operations";
+import { NuvioPatientDossierDetail } from "./NuvioPatientDossierDetail";
 
 export function NuvioOperationsWorkspace() {
   const [activeTab, setActiveTab] = useState<"patients" | "tasks" | "commQueue">("patients");
@@ -31,6 +32,25 @@ export function NuvioOperationsWorkspace() {
   const [editedMessage, setEditedMessage] = useState("");
   const [runningNurturing, setRunningNurturing] = useState(false);
   const [bannerNotice, setBannerNotice] = useState<string | null>(null);
+  const [showAddPatientModal, setShowAddPatientModal] = useState(false);
+  const [newPatientName, setNewPatientName] = useState("");
+  const [newPatientCountry, setNewPatientCountry] = useState("India");
+  const [newPatientSpecialty, setNewPatientSpecialty] = useState("Cardiology & Cardiac Surgery");
+  const [newPatientPhone, setNewPatientPhone] = useState("");
+  const [newPatientEmail, setNewPatientEmail] = useState("");
+  const [newPatientComplaint, setNewPatientComplaint] = useState("");
+  const [submittingPatient, setSubmittingPatient] = useState(false);
+
+  useEffect(() => {
+    const handleSwitch = (e: Event) => {
+      const custom = e as CustomEvent<{ tab: "patients" | "tasks" | "commQueue" }>;
+      if (custom.detail?.tab) {
+        setActiveTab(custom.detail.tab);
+      }
+    };
+    window.addEventListener("nuvio:switch-tab", handleSwitch);
+    return () => window.removeEventListener("nuvio:switch-tab", handleSwitch);
+  }, []);
 
   const loadData = async () => {
     setLoading(true);
@@ -81,6 +101,42 @@ export function NuvioOperationsWorkspace() {
       }
     } finally {
       setRunningNurturing(false);
+    }
+  };
+
+  const handleCreatePatient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPatientName.trim()) return;
+    setSubmittingPatient(true);
+    try {
+      const res = await fetch("/api/nuvio/inquiry", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newPatientName.trim(),
+          country: newPatientCountry.trim() || "India",
+          specialty: newPatientSpecialty,
+          phone: newPatientPhone.trim() || undefined,
+          whatsapp: newPatientPhone.trim() || undefined,
+          email: newPatientEmail.trim() || undefined,
+          complaint: newPatientComplaint.trim() || "New patient inquiry",
+          source: "website",
+        }),
+      });
+      const data = await res.json();
+      if (data.ok && data.dossier) {
+        setShowAddPatientModal(false);
+        setNewPatientName("");
+        setNewPatientPhone("");
+        setNewPatientEmail("");
+        setNewPatientComplaint("");
+        await loadData();
+        setSelectedPatient(data.dossier);
+      }
+    } catch {
+      // Quiet
+    } finally {
+      setSubmittingPatient(false);
     }
   };
 
@@ -148,7 +204,9 @@ export function NuvioOperationsWorkspace() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-5 max-w-6xl mx-auto">
+    <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-app text-ink">
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <div className="flex flex-col gap-4 p-5 pb-20 md:pb-5 max-w-6xl mx-auto">
       {/* Top Banner & Title */}
       <div className="flex items-center justify-between pb-3 border-b border-border-secondary">
         <div>
@@ -158,6 +216,14 @@ export function NuvioOperationsWorkspace() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowAddPatientModal(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-all shadow-xs"
+          >
+            <Plus size={13} />
+            Add Patient
+          </button>
           <button
             type="button"
             onClick={handleRunNurturing}
@@ -531,107 +597,157 @@ export function NuvioOperationsWorkspace() {
         </div>
       )}
 
-      {/* Case Timeline Drawer / Modal */}
+      {/* Unified Patient Dossier Detail Modal */}
       {selectedPatient && (
+        <NuvioPatientDossierDetail
+          dossier={selectedPatient}
+          onClose={() => setSelectedPatient(null)}
+          onUpdateDossier={loadData}
+        />
+      )}
+
+      {/* Add Patient Modal */}
+      {showAddPatientModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="w-full max-w-2xl max-h-[85vh] rounded-xl border border-border bg-menu shadow-2xl overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-border bg-subtle flex items-center justify-between">
+          <div className="w-full max-w-lg rounded-xl bg-menu border border-border p-6 shadow-2xl flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-border-secondary pb-3">
               <div>
-                <h3 className="text-[15px] font-semibold text-ink">
-                  Case History: {selectedPatient.personal.name} ({selectedPatient.patientId})
-                </h3>
-                <p className="text-[11px] text-ink-secondary mt-0.5">
-                  Origin: {selectedPatient.personal.country} • Specialty: {selectedPatient.clinical.specialty || "General"} • Stage: {selectedPatient.stage}
+                <h2 className="text-base font-semibold text-ink">New Patient Intake</h2>
+                <p className="text-[12px] text-ink-secondary mt-0.5">
+                  Register a new patient enquiry into the coordination pipeline.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => setSelectedPatient(null)}
-                className="text-ink-secondary hover:text-ink p-1 rounded-md"
+                onClick={() => setShowAddPatientModal(false)}
+                className="rounded p-1 text-ink-secondary hover:text-ink hover:bg-menu-hover"
               >
                 <X size={16} />
               </button>
             </div>
 
-            <div className="p-5 overflow-y-auto flex-1 flex flex-col gap-4">
-              {/* Timeline Events */}
+            <form onSubmit={handleCreatePatient} className="flex flex-col gap-3.5">
               <div>
-                <h4 className="text-[12px] font-bold text-ink uppercase tracking-wider mb-2">Chronological Case Timeline</h4>
-                <div className="border-l-2 border-border pl-4 space-y-3.5">
-                  {selectedPatient.timeline.map((ev, i) => (
-                    <div key={i} className="relative">
-                      <div className="absolute -left-[21px] top-1.5 size-2 rounded-full bg-accent" />
-                      <div className="flex items-center justify-between text-[11px] text-ink-secondary">
-                        <span className="font-semibold text-ink">{ev.actor}</span>
-                        <span>{new Date(ev.at).toLocaleString()}</span>
-                      </div>
-                      <p className="text-[12px] text-ink mt-0.5">{ev.note}</p>
-                      {ev.requiresHumanApproval && (
-                        <div className="mt-1 flex items-center gap-1 text-[10px] text-amber-600 font-medium">
-                          <ShieldAlert size={11} />
-                          Requires coordinator sign-off {ev.approved ? "(Confirmed)" : "(Pending)"}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                <label className="block text-[12px] font-medium text-ink mb-1">
+                  Patient Full Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Tariq Al-Mansoor"
+                  value={newPatientName}
+                  onChange={(e) => setNewPatientName(e.target.value)}
+                  className="w-full rounded-md border border-border px-3 py-2 text-[13px] bg-subtle text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[12px] font-medium text-ink mb-1">
+                    Country of Origin
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Oman, Kenya, UAE"
+                    value={newPatientCountry}
+                    onChange={(e) => setNewPatientCountry(e.target.value)}
+                    className="w-full rounded-md border border-border px-3 py-2 text-[13px] bg-subtle text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium text-ink mb-1">
+                    Medical Specialty
+                  </label>
+                  <select
+                    value={newPatientSpecialty}
+                    onChange={(e) => setNewPatientSpecialty(e.target.value)}
+                    className="w-full rounded-md border border-border px-3 py-2 text-[13px] bg-subtle text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                  >
+                    <option value="Cardiology & Cardiac Surgery">Cardiology & Cardiac Surgery</option>
+                    <option value="Oncology">Oncology</option>
+                    <option value="Orthopedics & Joint Replacement">Orthopedics & Joint Replacement</option>
+                    <option value="Neurology & Neurosurgery">Neurology & Neurosurgery</option>
+                    <option value="Organ Transplants">Organ Transplants</option>
+                    <option value="IVF & Fertility">IVF & Fertility</option>
+                    <option value="Bariatric Surgery">Bariatric Surgery</option>
+                    <option value="General Surgery">General Surgery</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Consultations */}
-              {selectedPatient.consultations && selectedPatient.consultations.length > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <h4 className="text-[12px] font-bold text-ink uppercase tracking-wider mb-2">Consultations</h4>
-                  <div className="space-y-2">
-                    {selectedPatient.consultations.map((c) => (
-                      <div key={c.id} className="p-2.5 rounded border border-border bg-subtle text-[12px]">
-                        <div className="flex items-center justify-between font-medium text-ink">
-                          <span>{c.mode.toUpperCase()} Consultation with {c.doctorName || c.department || "Specialist"}</span>
-                          <span className="px-1.5 py-0.5 text-[10px] rounded bg-menu font-bold">{c.schedulingStatus}</span>
-                        </div>
-                        {c.confirmedDateTime && (
-                          <div className="text-[11px] text-emerald-600 mt-1">Confirmed for: {c.confirmedDateTime}</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  <label className="block text-[12px] font-medium text-ink mb-1">
+                    Phone / WhatsApp
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="+968 9123 4567"
+                    value={newPatientPhone}
+                    onChange={(e) => setNewPatientPhone(e.target.value)}
+                    className="w-full rounded-md border border-border px-3 py-2 text-[13px] bg-subtle text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
                 </div>
-              )}
-
-              {/* Documents */}
-              {selectedPatient.documents && selectedPatient.documents.length > 0 && (
                 <div>
-                  <h4 className="text-[12px] font-bold text-ink uppercase tracking-wider mb-2">Diagnostic Reports & Documents</h4>
-                  <div className="space-y-2">
-                    {selectedPatient.documents.map((doc) => (
-                      <div key={doc.id} className="p-2.5 rounded border border-border bg-subtle text-[12px] flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-ink">{doc.name}</div>
-                          <div className="text-[11px] text-ink-secondary">Category: {doc.category}</div>
-                        </div>
-                        <span className={`px-2 py-0.5 text-[11px] rounded font-medium ${
-                          doc.isClinicianVerified ? "bg-emerald-500/10 text-emerald-600" : "bg-menu text-ink"
-                        }`}>
-                          {doc.status} {doc.isClinicianVerified ? "• Verified" : ""}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  <label className="block text-[12px] font-medium text-ink mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="patient@example.com"
+                    value={newPatientEmail}
+                    onChange={(e) => setNewPatientEmail(e.target.value)}
+                    className="w-full rounded-md border border-border px-3 py-2 text-[13px] bg-subtle text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                  />
                 </div>
-              )}
-            </div>
+              </div>
 
-            <div className="p-3 border-t border-border bg-subtle flex justify-end">
-              <button
-                type="button"
-                onClick={() => setSelectedPatient(null)}
-                className="px-4 py-1.5 text-[12px] font-medium bg-accent text-white rounded-md"
-              >
-                Close
-              </button>
-            </div>
+              <div>
+                <label className="block text-[12px] font-medium text-ink mb-1">
+                  Chief Complaint / Medical History Notes
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Describe patient's condition, diagnosis, symptoms, or requested treatments..."
+                  value={newPatientComplaint}
+                  onChange={(e) => setNewPatientComplaint(e.target.value)}
+                  className="w-full rounded-md border border-border px-3 py-2 text-[13px] bg-subtle text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-secondary">
+                <button
+                  type="button"
+                  onClick={() => setShowAddPatientModal(false)}
+                  className="px-3.5 py-1.5 text-[12px] font-medium border border-border rounded-md text-ink hover:bg-menu-hover"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingPatient}
+                  className="flex items-center gap-1.5 px-4 py-1.5 text-[12px] font-medium bg-emerald-600 text-white rounded-md hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-xs"
+                >
+                  <Plus size={13} />
+                  {submittingPatient ? "Creating Case..." : "Create Patient Case"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
-    </div>
+
+      {/* Mobile Floating Action Button (FAB) to Add Patient */}
+      <button
+        type="button"
+        onClick={() => setShowAddPatientModal(true)}
+        className="md:hidden fixed bottom-20 right-4 z-40 flex items-center justify-center w-12 h-12 rounded-full bg-emerald-600 text-white shadow-lg hover:bg-emerald-700 active:scale-95 transition-transform"
+        aria-label="Add New Patient Case"
+      >
+        <Plus size={20} />
+      </button>
+        </div>
+      </div>
+    </main>
   );
 }

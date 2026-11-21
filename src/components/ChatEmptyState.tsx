@@ -1,6 +1,5 @@
 import { api, useStore, type Bot } from "@/state/store";
 import { useAdvancedMode } from "@/lib/interface-mode";
-import { t } from "@/lib/i18n";
 import { BotAvatar } from "./Avatar";
 import { RenameTitle } from "./RenameTitle";
 
@@ -25,8 +24,26 @@ export function EmptyChat({ bot }: { bot: Bot }) {
         className="text-[17px] font-semibold text-ink"
         inputClassName="rounded bg-inset px-1.5 py-0.5 text-center text-[17px] font-semibold"
       />}
-      <div className="max-w-[360px] text-[14px] text-ink-secondary">
-        {bot.description || t("chat.emptyPrompt")}
+      <div className="max-w-[440px] text-[14px] leading-relaxed text-ink-secondary">
+        {bot.description || "Welcome to Nuvio. I help your team coordinate patient enquiries, treatment journeys, consultations, documents, and follow-ups."}
+      </div>
+      <div className="mt-3 flex max-w-[520px] flex-wrap items-center justify-center gap-2">
+        {[
+          "Review patient enquiries",
+          "View pending coordinator tasks",
+          "Review communication drafts",
+          "Check patient journey status",
+        ].map((askText) => (
+          <button
+            key={askText}
+            type="button"
+            data-nuvio-ask={askText}
+            onClick={() => dispatch({ type: "send", botId: bot.id, text: askText, threadId: bot.threadId })}
+            className="rounded-full border border-hairline/70 bg-app px-3.5 py-1.5 text-[13px] font-medium text-ink transition-colors hover:bg-raised-hover"
+          >
+            {askText}
+          </button>
+        ))}
       </div>
     </div>
   );

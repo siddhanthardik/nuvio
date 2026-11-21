@@ -91,6 +91,11 @@ import { WebPanelPage } from "@/components/WebPanelPage";
 import { AppPreviewPanel } from "@/components/published-apps/AppPreviewPanel";
 import { FilePreviewPanel } from "@/components/FilePreviewPanel";
 import { refreshPublishedApps } from "@/lib/own-published-apps";
+import { NuvioOperationsWorkspace } from "@/components/nuvio/NuvioOperationsWorkspace";
+import { NuvioDashboard } from "@/components/nuvio/NuvioDashboard";
+import { NuvioWorkforceRoom } from "@/components/nuvio/NuvioWorkforceRoom";
+import { NuvioMobileBottomNav } from "@/components/nuvio/NuvioMobileBottomNav";
+import { NuvioOnboardingHost } from "@/components/nuvio/NuvioOnboardingHost";
 
 function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
   const { state, dispatch } = useStore();
@@ -99,6 +104,11 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
   useTeamPeopleLoader(state.config, needsYou);
   useInboxLoader(`${inboxVersion(state.bots) ?? ""}|${needsYou}`);
   useEffect(() => { refreshPublishedApps(); }, []);
+  useEffect(() => {
+    const handleOpenSettings = () => dispatch({ type: "toggleSettings", open: true });
+    window.addEventListener("nuvio:open-settings", handleOpenSettings);
+    return () => window.removeEventListener("nuvio:open-settings", handleOpenSettings);
+  }, [dispatch]);
   const inboxReady = useInboxReady();
   const inboxPanel = useInboxPanel();
   const inboxShown = inboxPanel.open && inboxReady;
@@ -398,7 +408,13 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
         open={drawerOpen}
         onClose={closeDrawer}
       />}
-      {state.activeView === "team-map" ? (
+      {state.activeView === "nuvio-operations" ? (
+        <NuvioOperationsWorkspace />
+      ) : state.activeView === "nuvio-workforce" ? (
+        <NuvioWorkforceRoom />
+      ) : state.activeView === "nuvio-dashboard" ? (
+        <NuvioDashboard />
+      ) : state.activeView === "team-map" ? (
         <TeamMapPage />
       ) : state.activeView === "files" ? (
         <FilesView />
@@ -505,6 +521,7 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
       <WindowCaptionButtons
         visible={capabilities.windowChrome === "win-caption" && Boolean(window.ogb?.windowControls)}
       />
+      <NuvioMobileBottomNav />
     </div>
   );
 }
@@ -526,6 +543,7 @@ function Application() {
         <ThreadRefsProvider>
           <Shell viewer={viewer} />
         </ThreadRefsProvider>
+        <NuvioOnboardingHost />
         <WelcomeGate viewer={viewer} />
         <MausBotWelcome viewer={viewer} />
         <NewBotNameHost />

@@ -1,17 +1,13 @@
 import { useEffect, useRef, useState, type DragEvent } from "react";
-import { invitedToTeam, teamWelcomeShownThisLaunch, useTeamWelcomeRecord, type TeamWelcomeRecord } from "@/lib/team-welcome";
-import { createPortal } from "react-dom";
+import { invitedToTeam, teamWelcomeShownThisLaunch, type TeamWelcomeRecord } from "@/lib/team-welcome";
 import { BookOpen, Crown, Pencil, Sparkles, Wand2 } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
-import { emailGateDone } from "@/lib/analytics";
 import { useAdvancedMode } from "@/lib/interface-mode";
-import { DEFAULT_BOT_NAME, myDefaultBot, setWelcomingBot, useViewerEmail } from "@/lib/default-bot";
+import { DEFAULT_BOT_NAME, setWelcomingBot } from "@/lib/default-bot";
 import { landInSidebar } from "@/lib/mausbot-landing";
-import { firstReplyPending } from "@/lib/corner-popup";
-import { launchDialogShown, markLaunchDialog } from "@/lib/launch-dialogs";
-import { welcomeDue, welcomeFinishedThisLaunch, type WelcomeViewer } from "@/lib/onboarding";
+import type { WelcomeViewer } from "@/lib/onboarding";
 import { useStore, type Bot } from "@/state/store";
 import { BOT_PROFILE_LIMITS } from "../../shared/bot-profile";
 import { BotAvatar } from "./Avatar";
@@ -57,41 +53,12 @@ export function teamQuiet(state: { config?: { team?: unknown } | null; bots: Rea
 /** MausBot's first-launch card is due now (mausBotWelcomeDue), and, like the Cloud Pro popup and the product-updates
  * question, waits for the first reply (unknown until the bots load), for a launch after the one whose welcome finished, and
  * for a launch the notices queue has not already used. The notices queue asks this too, so the card goes first. */
-export function useMausBotWelcomeDue(viewer: WelcomeViewer | null): { bot: Bot | undefined; due: boolean } {
-  const { state } = useStore();
-  const bot = myDefaultBot(state.bots, useViewerEmail());
-  const teamId = state.config?.team?.id ?? null;
-  const teamWelcome = useTeamWelcomeRecord(teamId && viewer?.canSave && invitedToTeam(viewer) ? teamId : null);
-  // The app tour runs only when Settings starts it; one never taken does not hold this back.
-  const touring = state.tourOpen;
-  const onboardingDue = !viewer || welcomeDue(state.config, {
-    remoteClient: window.ogb?.remoteClient?.active === true, legacyDone: emailGateDone(),
-    hosted: viewer.hosted, canSave: viewer.canSave, cloudHome: viewer.cloudHome,
-  });
-  const due = Boolean(state.config) && mausBotWelcomeDue({ bot, onboardingDue, welcomeOpen: state.welcomeOpen, tourOpen: touring })
-    && firstReplyPending(state) === false && !welcomeFinishedThisLaunch() && launchDialogShown() !== "notices" && !teamQuiet(state, viewer, teamWelcome);
-  return { bot, due };
+export function useMausBotWelcomeDue(_viewer: WelcomeViewer | null): { bot: Bot | undefined; due: boolean } {
+  return { bot: undefined, due: false };
 }
 
-export function MausBotWelcome({ viewer }: { viewer: WelcomeViewer | null }) {
-  const { state } = useStore();
-  const { bot, due: ready } = useMausBotWelcomeDue(viewer);
-  const [shownFor, setShownFor] = useState<string | null>(null);
-  const [closed, setClosed] = useState(false);
-  const due = !closed && ready;
-  useEffect(() => {
-    if (!due || !bot) return;
-    markLaunchDialog("mausbot");
-    setShownFor(bot.id);
-  }, [due, bot]);
-  useEffect(() => {
-    if (!shownFor || closed) return;
-    setWelcomingBot(shownFor);
-    return () => setWelcomingBot(null);
-  }, [shownFor, closed]);
-  const shown = shownFor && !closed ? state.bots.find((candidate) => candidate.id === shownFor) : undefined;
-  if (!shown) return null;
-  return createPortal(<MausBotWelcomeCard bot={shown} onClose={() => setClosed(true)} />, document.body);
+export function MausBotWelcome(_props: { viewer: WelcomeViewer | null }) {
+  return null;
 }
 
 const LINES = [[Sparkles, "mausbotWelcome.line.helper"], [BookOpen, "mausbotWelcome.line.knows"], [Wand2, "mausbotWelcome.line.setup"], [Crown, "mausbotWelcome.line.powers"]] as const;

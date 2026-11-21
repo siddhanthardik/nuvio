@@ -1,4 +1,4 @@
-import { AppWindow, FolderOpen, FolderTree, Globe, Puzzle, Rocket, UsersRound, Zap } from "lucide-react";
+import { AppWindow, FolderOpen, FolderTree, Globe, HeartPulse, LayoutDashboard, Puzzle, Rocket, UsersRound, Zap } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 
 import { useAppTriggers } from "@/lib/app-triggers";
@@ -161,6 +161,22 @@ export function SidebarFooterNav({
 
   const rows = (
     <>
+      <NavRow
+        id="nuvio-operations"
+        label="Patient Operations"
+        iconsOnly={iconsOnly || toolbar}
+        active={state.activeView === "nuvio-operations"}
+        icon={(active) => <HeartPulse size={iconSize} className={tone(active)} />}
+        onClick={() => dispatch({ type: "showOperations" })}
+      />
+      <NavRow
+        id="nuvio-dashboard"
+        label="Operations Dashboard"
+        iconsOnly={iconsOnly || toolbar}
+        active={state.activeView === "nuvio-dashboard"}
+        icon={(active) => <LayoutDashboard size={iconSize} className={tone(active)} />}
+        onClick={() => dispatch({ type: "showDashboard" })}
+      />
       {automationsRow}
       {appsRow}
       {(advanced || iconsOnly) && (

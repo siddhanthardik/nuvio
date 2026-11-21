@@ -36,8 +36,22 @@ export const WORKFLOW_CAPABILITIES = [
 
 export type WorkflowCapability = (typeof WORKFLOW_CAPABILITIES)[number];
 
+export const NUVIO_AGENT_IDS = [
+  "nuvio_concierge",
+  "nuvio_lead_qualifier",
+  "nuvio_journey_coordinator",
+  "nuvio_clinical",
+  "nuvio_consultation",
+  "nuvio_estimator",
+  "nuvio_travel",
+  "nuvio_followup",
+  "nuvio_voice",
+] as const;
+
+export type NuvioAgentId = (typeof NUVIO_AGENT_IDS)[number];
+
 export const nuvioAgentRoleSchema = z.object({
-  id: z.enum(["nuvio_concierge", "nuvio_clinical", "nuvio_estimator", "nuvio_travel"]),
+  id: z.enum(NUVIO_AGENT_IDS),
   displayName: z.string().min(1),
   title: z.string().min(1),
   avatarUrl: z.string().optional(),
@@ -51,30 +65,65 @@ export const DEFAULT_AGENTS = {
   nuvio_concierge: {
     id: "nuvio_concierge" as const,
     displayName: "Siddhant",
-    title: "Patient Concierge & Lead Coordinator",
+    title: "Patient Concierge",
     enabled: true,
     customInstructions: "Provide warm, natural, empathetic 1-3 sentence guidance. Ask one question at a time.",
+  },
+  nuvio_lead_qualifier: {
+    id: "nuvio_lead_qualifier" as const,
+    displayName: "Kavita",
+    title: "Lead Qualification Agent",
+    enabled: true,
+    customInstructions: "Score urgency, evaluate patient intent, verify destination preferences and budget fit.",
+  },
+  nuvio_journey_coordinator: {
+    id: "nuvio_journey_coordinator" as const,
+    displayName: "Rohan",
+    title: "Patient Journey Coordinator",
+    enabled: true,
+    customInstructions: "Track patient stage progression, identify journey blockers, and dispatch specialist tasks.",
   },
   nuvio_clinical: {
     id: "nuvio_clinical" as const,
     displayName: "Dr. Aarti",
-    title: "Clinical Coordinator",
+    title: "Medical Records Coordinator",
     enabled: true,
     customInstructions: "Coordinate medical reports and summarize clinical history. Never diagnose directly.",
+  },
+  nuvio_consultation: {
+    id: "nuvio_consultation" as const,
+    displayName: "Ananya",
+    title: "Consultation Coordinator",
+    enabled: true,
+    customInstructions: "Coordinate doctor availability, organize teleconsultations, and verify patient questions.",
   },
   nuvio_estimator: {
     id: "nuvio_estimator" as const,
     displayName: "Pramesh",
-    title: "Treatment Package & Cost Estimator",
+    title: "Treatment Estimate Agent",
     enabled: true,
-    customInstructions: "Provide realistic multi-currency estimate ranges. Require human approval before sharing final quotes.",
+    customInstructions: "Formulate realistic multi-currency estimate ranges. Require human approval before sharing final quotes.",
   },
   nuvio_travel: {
     id: "nuvio_travel" as const,
     displayName: "Mahesh",
-    title: "Medical Visa & Travel Logistics Specialist",
+    title: "Medical Visa & Travel Specialist",
     enabled: true,
     customInstructions: "Coordinate medical visa paperwork, flight itinerary, airport pickup, and companion lodging.",
+  },
+  nuvio_followup: {
+    id: "nuvio_followup" as const,
+    displayName: "Pooja",
+    title: "Patient Follow-up Agent",
+    enabled: true,
+    customInstructions: "Run personalized check-in cadences, re-engage dormant enquiries, and track recovery milestones.",
+  },
+  nuvio_voice: {
+    id: "nuvio_voice" as const,
+    displayName: "Vikram",
+    title: "Voice Calling Agent",
+    enabled: true,
+    customInstructions: "Handle inbound and outbound patient phone calls, clarify urgent requests, and log call summaries.",
   },
 };
 
@@ -98,6 +147,9 @@ export const organizationConfigSchema = z.preprocess(
       if (obj.organizationName && !obj.hospitalName) obj.hospitalName = obj.organizationName;
       if (obj.hospitalId && !obj.organizationId) obj.organizationId = obj.hospitalId;
       if (obj.organizationId && !obj.hospitalId) obj.hospitalId = obj.organizationId;
+      if (obj.agents && typeof obj.agents === "object") {
+        obj.agents = { ...DEFAULT_AGENTS, ...(obj.agents as Record<string, unknown>) };
+      }
       return obj;
     }
     return val;
@@ -149,9 +201,14 @@ export const organizationConfigSchema = z.preprocess(
     agents: z
       .object({
         nuvio_concierge: nuvioAgentRoleSchema.default(DEFAULT_AGENTS.nuvio_concierge),
+        nuvio_lead_qualifier: nuvioAgentRoleSchema.optional().default(DEFAULT_AGENTS.nuvio_lead_qualifier),
+        nuvio_journey_coordinator: nuvioAgentRoleSchema.optional().default(DEFAULT_AGENTS.nuvio_journey_coordinator),
         nuvio_clinical: nuvioAgentRoleSchema.default(DEFAULT_AGENTS.nuvio_clinical),
+        nuvio_consultation: nuvioAgentRoleSchema.optional().default(DEFAULT_AGENTS.nuvio_consultation),
         nuvio_estimator: nuvioAgentRoleSchema.default(DEFAULT_AGENTS.nuvio_estimator),
         nuvio_travel: nuvioAgentRoleSchema.default(DEFAULT_AGENTS.nuvio_travel),
+        nuvio_followup: nuvioAgentRoleSchema.optional().default(DEFAULT_AGENTS.nuvio_followup),
+        nuvio_voice: nuvioAgentRoleSchema.optional().default(DEFAULT_AGENTS.nuvio_voice),
       })
       .default(DEFAULT_AGENTS),
 
@@ -180,7 +237,9 @@ export const organizationConfigSchema = z.preprocess(
 );
 
 export type NuvioOrganizationConfig = z.infer<typeof organizationConfigSchema>;
-export type NuvioOrganizationConfigInput = z.input<typeof organizationConfigSchema>;
+export type NuvioOrganizationConfigInput = Omit<Partial<NuvioOrganizationConfig>, "agents"> & {
+  agents?: Partial<NuvioOrganizationConfig["agents"]>;
+};
 
 export const DEFAULT_ORGANIZATION_CONFIG: NuvioOrganizationConfig = organizationConfigSchema.parse({});
 
