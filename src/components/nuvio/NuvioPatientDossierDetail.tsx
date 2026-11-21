@@ -271,6 +271,12 @@ export function NuvioPatientDossierDetail({
                   <div className="font-medium text-ink uppercase">{dossier.leadSource}</div>
                 </div>
                 <div>
+                  <div className="text-[11px] text-ink-secondary uppercase font-semibold">Hospital / Healthcare Facility</div>
+                  <div className="font-medium text-ink">
+                    {dossier.clinical.preferredHospital || "In-House Hospital Facility"}
+                  </div>
+                </div>
+                <div>
                   <div className="text-[11px] text-ink-secondary uppercase font-semibold">Active AI Coordinator</div>
                   <div className="font-medium text-ink">{dossier.activeAgent.replace(/_/g, " ").toUpperCase()}</div>
                 </div>

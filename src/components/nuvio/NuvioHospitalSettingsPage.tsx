@@ -14,6 +14,8 @@ import {
   HeartPulse,
   Bot,
   Copy,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { useStore } from "@/state/store";
 import type {
@@ -34,6 +36,40 @@ export function NuvioHospitalSettingsPage() {
   const [activeTab, setActiveTab] = useState<
     "profile" | "specialties" | "communication" | "workflow" | "webhooks"
   >("profile");
+
+  const [showAddHospitalForm, setShowAddHospitalForm] = useState(false);
+  const [newHospitalName, setNewHospitalName] = useState("");
+  const [newHospitalCity, setNewHospitalCity] = useState("");
+  const [newHospitalCountry, setNewHospitalCountry] = useState("India");
+  const [newHospitalAccreditation, setNewHospitalAccreditation] = useState("JCI");
+
+  const handleAddPartnerHospital = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!config || !newHospitalName.trim()) return;
+    const current = config.partnerHospitals || [];
+    const newHospital = {
+      id: `hosp_${Date.now().toString(36)}`,
+      name: newHospitalName.trim(),
+      city: newHospitalCity.trim() || config.operatingLocation || "New Delhi",
+      country: newHospitalCountry.trim() || config.country || "India",
+      accreditations: newHospitalAccreditation ? [newHospitalAccreditation] : ["JCI"],
+      specialties: [],
+      isPreferred: current.length === 0,
+    };
+    setConfig({ ...config, partnerHospitals: [...current, newHospital] });
+    setNewHospitalName("");
+    setNewHospitalCity("");
+    setShowAddHospitalForm(false);
+  };
+
+  const handleRemovePartnerHospital = (id: string) => {
+    if (!config) return;
+    const current = config.partnerHospitals || [];
+    setConfig({
+      ...config,
+      partnerHospitals: current.filter((h) => h.id !== id),
+    });
+  };
 
   useEffect(() => {
     let alive = true;
@@ -442,6 +478,169 @@ export function NuvioHospitalSettingsPage() {
                   Accreditations are automatically cited in patient welcome dossiers to build trust with international patients.
                 </p>
               </div>
+
+              {/* Facility Scope: Single Hospital vs Multi-Hospital Partner Network */}
+              {config.organizationType === "hospital" ? (
+                <div className="rounded-xl border border-border bg-menu p-5 shadow-xs flex flex-col gap-3">
+                  <div className="flex items-center gap-2 border-b border-border-secondary pb-2.5">
+                    <Building2 size={16} className="text-accent" />
+                    <h2 className="text-sm font-semibold text-ink">
+                      Facility Model: Dedicated Single Hospital
+                    </h2>
+                  </div>
+                  <p className="text-[12px] text-ink leading-relaxed">
+                    Nuvio is configured as a dedicated AI workforce for <strong>{config.organizationName}</strong>. AI agents exclusively introduce your internal clinical departments and specialist doctors, coordinate in-house consultations, and generate official surgical estimates based on your billing rules. Competing facilities are never suggested.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-border bg-menu p-5 shadow-xs flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-border-secondary pb-2.5">
+                    <div>
+                      <h2 className="text-sm font-semibold text-ink flex items-center gap-2">
+                        <Building2 size={16} className="text-accent" />
+                        Partner Hospital Network ({config.partnerHospitals?.length || 0} Facilities)
+                      </h2>
+                      <p className="text-[12px] text-ink-secondary mt-0.5">
+                        {config.organizationType === "medical_tourism_company"
+                          ? "Partner healthcare providers where your company refers international patients for surgery and treatment."
+                          : "Accredited hospitals where you refer patients for expert second opinions and medical procedures."}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddHospitalForm(!showAddHospitalForm)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold bg-accent text-white rounded-md hover:brightness-110 transition-all shadow-xs"
+                    >
+                      <Plus size={13} />
+                      {showAddHospitalForm ? "Close Form" : "Add Partner Hospital"}
+                    </button>
+                  </div>
+
+                  {showAddHospitalForm && (
+                    <form
+                      onSubmit={handleAddPartnerHospital}
+                      className="p-4 rounded-lg border border-accent/20 bg-accent/5 flex flex-col gap-3"
+                    >
+                      <div className="text-[12px] font-semibold text-ink">
+                        Register New Partner Hospital
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-medium text-ink mb-1">
+                            Hospital Name <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="e.g. Apollo Hospitals, Fortis Memorial"
+                            value={newHospitalName}
+                            onChange={(e) => setNewHospitalName(e.target.value)}
+                            className="w-full rounded-md border border-border px-2.5 py-1.5 text-[12px] bg-menu text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-ink mb-1">
+                            City / Location
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. New Delhi, Gurgaon, Istanbul"
+                            value={newHospitalCity}
+                            onChange={(e) => setNewHospitalCity(e.target.value)}
+                            className="w-full rounded-md border border-border px-2.5 py-1.5 text-[12px] bg-menu text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[11px] font-medium text-ink mb-1">
+                            Country
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="e.g. India, Turkey, Thailand"
+                            value={newHospitalCountry}
+                            onChange={(e) => setNewHospitalCountry(e.target.value)}
+                            className="w-full rounded-md border border-border px-2.5 py-1.5 text-[12px] bg-menu text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-medium text-ink mb-1">
+                            Accreditation
+                          </label>
+                          <select
+                            value={newHospitalAccreditation}
+                            onChange={(e) => setNewHospitalAccreditation(e.target.value)}
+                            className="w-full rounded-md border border-border px-2.5 py-1.5 text-[12px] bg-menu text-ink focus:outline-none focus:ring-1 focus:ring-accent"
+                          >
+                            <option value="JCI">JCI Accredited</option>
+                            <option value="NABH">NABH Accredited</option>
+                            <option value="ISO">ISO Certified</option>
+                            <option value="JCI, NABH">Both JCI & NABH</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowAddHospitalForm(false)}
+                          className="px-3 py-1 text-[11px] border border-border rounded text-ink"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="px-3.5 py-1 text-[11px] font-medium bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                        >
+                          Save Partner Hospital
+                        </button>
+                      </div>
+                    </form>
+                  )}
+
+                  <div className="flex flex-col gap-2">
+                    {(!config.partnerHospitals || config.partnerHospitals.length === 0) ? (
+                      <div className="text-[12px] text-ink-secondary p-4 text-center border border-dashed border-border rounded-lg bg-subtle">
+                        No partner hospitals registered yet. Click &quot;Add Partner Hospital&quot; above to add your accredited hospital facilities.
+                      </div>
+                    ) : (
+                      config.partnerHospitals.map((hosp) => (
+                        <div
+                          key={hosp.id}
+                          className="flex items-center justify-between p-3 rounded-lg border border-border bg-subtle text-[12px]"
+                        >
+                          <div>
+                            <div className="font-semibold text-ink flex items-center gap-2">
+                              <span>{hosp.name}</span>
+                              {hosp.accreditations?.map((acc, ai) => (
+                                <span
+                                  key={ai}
+                                  className="px-1.5 py-0.5 text-[10px] font-semibold bg-accent/10 text-accent rounded"
+                                >
+                                  {acc}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="text-ink-secondary text-[11px] mt-0.5">
+                              {hosp.city ? `${hosp.city}, ` : ""}{hosp.country}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePartnerHospital(hosp.id)}
+                            className="p-1.5 text-ink-secondary hover:text-rose-500 rounded hover:bg-rose-500/10 transition-colors"
+                            title="Remove hospital"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
