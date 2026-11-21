@@ -1,12 +1,13 @@
 /**
  * Nuvio Medical Tourism Platform - Journey Workflow Orchestration
- * Coordinates multi-agent handoffs, inquiry ingestion, duplicate detection, and review gates.
+ * Coordinates multi-agent handoffs, inquiry ingestion, progressive lead capture,
+ * duplicate detection, and review gates.
  */
-import type { NuvioHospitalConfig } from "../../shared/nuvio/hospital-config.ts";
+import type { NuvioOrganizationConfig } from "../../shared/nuvio/organization-config.ts";
 import type {
   LeadSource,
   NuvioPatientDossier,
-  PatientJourneyStage,
+  PatientRelationship,
 } from "../../shared/nuvio/patient-journey.ts";
 import { NuvioDossierStore, stageDefaultAgent } from "./dossier-store.ts";
 import { EMERGENCY_RED_FLAGS } from "./prompts.ts";
@@ -15,12 +16,22 @@ export interface NewInquiryPayload {
   name: string;
   phone?: string;
   email?: string;
+  whatsapp?: string;
   country: string;
+  nationality?: string;
+  relationship?: PatientRelationship;
   primaryLanguage?: string;
+  specialty?: string;
   complaint?: string;
+  briefMedicalSummary?: string;
+  preferredDoctor?: string;
+  preferredHospital?: string;
+  preferredConsultationTiming?: string;
   source: LeadSource;
   age?: number;
   gender?: "male" | "female" | "other";
+  consentGiven?: boolean;
+  stage?: string;
 }
 
 export interface IngestionResult {
@@ -50,13 +61,13 @@ export function ingestInquiry(
   const isEmergency = detectEmergency(payload.complaint || "");
 
   // 1. Check for existing duplicate lead
-  const existing = store.findDuplicate(payload.phone, payload.email);
+  const existing = store.findDuplicate(payload.phone || payload.whatsapp, payload.email);
   if (existing) {
     const updated = store.transitionStage(
       existing.patientId,
       existing.stage,
       "nuvio_concierge",
-      `Repeated contact received via ${payload.source}. Inquiry note: "${payload.complaint || 'No additional note'}"`
+      `Repeated contact received via ${payload.source}. Inquiry note: "${payload.complaint || 'Follow-up enquiry'}"`
     );
 
     return {
@@ -73,24 +84,40 @@ export function ingestInquiry(
     patientId,
     inquiryDate: Date.now(),
     leadSource: payload.source,
-    stage: "lead_captured",
+    stage: payload.stage || "lead_captured",
     personal: {
       name: payload.name.trim(),
       phone: payload.phone?.trim(),
       email: payload.email?.trim(),
+      whatsapp: payload.whatsapp?.trim(),
       country: payload.country.trim(),
+      nationality: payload.nationality?.trim(),
+      relationship: payload.relationship || "patient",
       primaryLanguage: payload.primaryLanguage || "English",
       age: payload.age,
       gender: payload.gender,
+      consent: {
+        dataProcessingConsent: payload.consentGiven !== false,
+        consentTimestamp: Date.now(),
+        consentChannel: payload.source,
+      },
     },
     clinical: {
       primaryComplaint: payload.complaint || "",
-      specialty: "General",
+      specialty: payload.specialty || "General",
+      briefMedicalSummary: payload.briefMedicalSummary,
+      preferredDoctor: payload.preferredDoctor,
+      preferredHospital: payload.preferredHospital,
+      preferredConsultationTiming: payload.preferredConsultationTiming,
       medicalReports: [],
     },
+    documents: [],
+    consultations: [],
+    followUps: [],
     estimate: {
       currency: "USD",
       inclusions: [],
+      exclusions: [],
       approvedByCoordinator: false,
     },
     visaTravel: {
@@ -101,9 +128,9 @@ export function ingestInquiry(
     timeline: [
       {
         at: Date.now(),
-        stage: "lead_captured",
+        stage: payload.stage || "lead_captured",
         actor: "nuvio_concierge",
-        note: `Inquiry successfully captured from ${payload.source}. Primary complaint: "${payload.complaint || 'None specified'}"`,
+        note: `Enquiry successfully captured from ${payload.source}. Specialty: ${payload.specialty || 'General'}`,
       },
     ],
     activeAgent: "nuvio_concierge",
@@ -125,8 +152,8 @@ export function ingestInquiry(
 
 export function buildHandoffSummary(
   dossier: NuvioPatientDossier,
-  config: NuvioHospitalConfig,
-  targetStage: PatientJourneyStage
+  config: NuvioOrganizationConfig,
+  targetStage: string
 ): string {
   const targetAgentId = stageDefaultAgent(targetStage);
   const targetAgentRole = (config.agents as Record<string, { displayName: string; title: string }>)[targetAgentId];
@@ -143,7 +170,9 @@ Receiving Agent: ${targetAgentName}
 
 Clinical Complaint: ${dossier.clinical.primaryComplaint || "None provided yet"}
 Specialty Assigned: ${dossier.clinical.specialty}
-Medical Reports Attached: ${dossier.clinical.medicalReports.length}
+Documents Attached: ${dossier.documents.length}
+Consultations Logged: ${dossier.consultations.length}
+Follow-ups Pending: ${dossier.followUps.filter((f) => f.status === "scheduled").length}
 
 Estimate Status: ${dossier.estimate.approvedByCoordinator ? "Approved by Coordinator" : "Pending Estimation / Human Sign-off"}
 Visa / Logistics Status: ${dossier.visaTravel.visaInvitationIssued ? "Visa Letter Issued" : "Pending Application"}

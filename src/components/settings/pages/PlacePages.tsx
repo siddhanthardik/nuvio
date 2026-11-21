@@ -39,6 +39,7 @@ import { ServerUpdateRow } from "../../ServerUpdateRow";
 import { versionLine } from "../settings-context";
 import { useSettingsShell } from "../settings-shell";
 import { AdvancedSection } from "../AdvancedSection";
+import { NuvioSettingsSection } from "../../nuvio/NuvioSettingsSection";
 
 const GROUPED_NOTE = "omb-settings-grouped-note";
 const GROUPED_DAYS = 30;
@@ -98,6 +99,7 @@ export function OverviewPage() {
     <SettingsGroup label={t("settings.overview.sidebar")} block="sidebar">
       <SettingsRows><PlaceLookRows /><DefaultBotSidebarRow simple /></SettingsRows>
     </SettingsGroup>
+    <NuvioSettingsSection />
     {ctx.desktop && ctx.cloud && team && team.cloudPage && <div data-settings-block="people-and-plan"><TeamPeopleCard team={team} admin={ctx.admin} owner={teamOwner} /></div>}
     {/* Address: a self-hosted server's own web address, Advanced only. A Cloud's address is MausBot's to manage, so it
         has none here (no administrator or proxy steps for a person who has no server to set up). */}
