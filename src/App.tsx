@@ -94,6 +94,7 @@ import { refreshPublishedApps } from "@/lib/own-published-apps";
 import { NuvioOperationsWorkspace } from "@/components/nuvio/NuvioOperationsWorkspace";
 import { NuvioDashboard } from "@/components/nuvio/NuvioDashboard";
 import { NuvioWorkforceRoom } from "@/components/nuvio/NuvioWorkforceRoom";
+import { NuvioHospitalSettingsPage } from "@/components/nuvio/NuvioHospitalSettingsPage";
 import { NuvioMobileBottomNav } from "@/components/nuvio/NuvioMobileBottomNav";
 import { NuvioOnboardingHost } from "@/components/nuvio/NuvioOnboardingHost";
 
@@ -105,7 +106,7 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
   useInboxLoader(`${inboxVersion(state.bots) ?? ""}|${needsYou}`);
   useEffect(() => { refreshPublishedApps(); }, []);
   useEffect(() => {
-    const handleOpenSettings = () => dispatch({ type: "toggleSettings", open: true });
+    const handleOpenSettings = () => dispatch({ type: "showHospitalSettings" });
     window.addEventListener("nuvio:open-settings", handleOpenSettings);
     return () => window.removeEventListener("nuvio:open-settings", handleOpenSettings);
   }, [dispatch]);
@@ -414,6 +415,8 @@ function Shell({ viewer }: { viewer: WelcomeViewer | null }) {
         <NuvioWorkforceRoom />
       ) : state.activeView === "nuvio-dashboard" ? (
         <NuvioDashboard />
+      ) : state.activeView === "nuvio-settings" ? (
+        <NuvioHospitalSettingsPage />
       ) : state.activeView === "team-map" ? (
         <TeamMapPage />
       ) : state.activeView === "files" ? (

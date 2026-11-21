@@ -15,6 +15,7 @@ export function SidebarNuvioNav({
   const operationsActive = state.activeView === "nuvio-operations";
   const workforceActive = state.activeView === "nuvio-workforce";
   const dashboardActive = state.activeView === "nuvio-dashboard";
+  const settingsActive = state.activeView === "nuvio-settings";
 
   const openOperations = () => {
     dispatch({ type: "showOperations" });
@@ -32,7 +33,7 @@ export function SidebarNuvioNav({
   };
 
   const openSettings = () => {
-    window.dispatchEvent(new CustomEvent("nuvio:open-settings"));
+    dispatch({ type: "showHospitalSettings" });
     onOpened?.();
   };
 
@@ -85,8 +86,12 @@ export function SidebarNuvioNav({
           type="button"
           aria-label="Hospital Settings"
           title="Hospital Settings"
+          aria-pressed={settingsActive}
           onClick={openSettings}
-          className="relative mx-auto flex size-[46px] shrink-0 items-center justify-center rounded-xl text-ink-secondary hover:bg-raised hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          className={cn(
+            "relative mx-auto flex size-[46px] shrink-0 items-center justify-center rounded-xl text-ink-secondary hover:bg-raised hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus",
+            settingsActive && "bg-raised text-accent font-semibold"
+          )}
         >
           <Settings size={20} aria-hidden="true" />
         </button>
@@ -175,12 +180,17 @@ export function SidebarNuvioNav({
         type="button"
         aria-label="Hospital Settings"
         title="Hospital Settings"
+        aria-pressed={settingsActive}
         onClick={openSettings}
-        className="flex w-full min-w-0 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left outline-none hover:bg-raised/60 focus-visible:ring-2 focus-visible:ring-accent/60 transition-colors"
+        className={cn(
+          "flex w-full min-w-0 items-center gap-2.5 rounded-lg px-2 py-1.5 text-left outline-none hover:bg-raised/60 focus-visible:ring-2 focus-visible:ring-accent/60 transition-colors",
+          settingsActive && "bg-raised text-accent font-medium"
+        )}
       >
         <span
           className={cn(
-            "relative grid shrink-0 place-items-center rounded-full bg-raised text-ink-secondary",
+            "relative grid shrink-0 place-items-center rounded-full",
+            settingsActive ? "bg-accent/15 text-accent" : "bg-raised text-ink-secondary",
             large ? "size-9" : "size-8"
           )}
         >

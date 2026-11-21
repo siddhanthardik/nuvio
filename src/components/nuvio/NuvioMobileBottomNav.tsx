@@ -46,8 +46,7 @@ export function NuvioMobileBottomNav() {
       dispatch({ type: "showOperations" });
       window.dispatchEvent(new CustomEvent("nuvio:switch-tab", { detail: { tab: "commQueue" } }));
     } else if (item === "settings") {
-      dispatch({ type: "showOperations" });
-      window.dispatchEvent(new CustomEvent("nuvio:open-settings"));
+      dispatch({ type: "showHospitalSettings" });
     } else if (item === "wizard") {
       window.dispatchEvent(new CustomEvent("nuvio:open-wizard"));
     }
